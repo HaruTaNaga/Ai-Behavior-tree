@@ -1,0 +1,609 @@
+/*=============================================================================*/
+// Copyright 2017-2018 Elite Engine
+// Authors: Matthieu Delaere
+/*=============================================================================*/
+// Behaviors.h: Implementation of certain reusable behaviors for Behavior Tree Demo
+/*=============================================================================*/
+#ifndef ELITE_APPLICATION_BEHAVIOR_TREE_BEHAVIORS
+#define ELITE_APPLICATION_BEHAVIOR_TREE_BEHAVIORS
+//-----------------------------------------------------------------
+// Includes & Forward Declarations
+//-----------------------------------------------------------------
+#include "stdafx.h"
+#include "EliteMath/EMath.h"
+#include "EBehaviorTree.h"
+#include "SteeringBehaviors.h"
+
+
+//-----------------------------------------------------------------
+// Behaviors
+//-----------------------------------------------------------------
+//TODO: insert code
+
+inline bool HasTarget(Elite::Blackboard * pBlackboard)
+{
+	//std::cout << "check if has target" << std::endl; 
+	bool hasTarget = false; 
+	const bool dataAvailable = pBlackboard->GetData("TargetSet", hasTarget); 
+	if (!dataAvailable)
+	{
+		//std::cout << "Failed to obtain :" << "TargetSet" << "From Btree in" << " HasTarget" << std::endl;
+		return false;
+	}
+	if (hasTarget)
+		//std::cout << "Has Target" << std::endl; 
+	return hasTarget; 
+
+}
+inline bool DoesNotHaveTarget(Elite::Blackboard * pBlackboard)
+{
+
+	bool doesnothasTarget = true;
+	const bool dataAvailable = pBlackboard->GetData("TargetSet", doesnothasTarget);
+	if (!dataAvailable)
+	{
+		//std::cout << "Failed to obtain :" << "TargetSet" << "From Btree" << " DoesnotHasTarget" << std::endl;
+		return false;
+	}
+	
+
+	return !doesnothasTarget;
+
+}
+
+inline bool LowHP(Elite::Blackboard * pBlackboard)
+{
+	AgentInfo pAgent;
+	if(! pBlackboard->GetData("Agent", pAgent)) return false; 
+	if (pAgent.Health < 8)
+		return true;
+
+}
+inline bool HasMedkit(Elite::Blackboard * pBlackboard)
+{
+	//Todo Keep track  of inventory in blackboard
+	auto InvInfo = InventoryInfo();
+	pBlackboard->GetData("InventoryInfo", InvInfo);
+	return  (InvInfo.slots[0] == ItemTypes::MEDKIT
+		|| InvInfo.slots[1] == ItemTypes::MEDKIT
+		|| InvInfo.slots[2] == ItemTypes::MEDKIT
+		|| InvInfo.slots[3] == ItemTypes::MEDKIT
+		|| InvInfo.slots[4] == ItemTypes::MEDKIT);
+}
+inline bool LowEnergy(Elite::Blackboard * pBlackboard)
+{
+	AgentInfo pAgent;
+	if (!pBlackboard->GetData("Agent", pAgent)) return false;
+	if (pAgent.Energy < 3)
+		return true;
+}
+inline bool HasFood(Elite::Blackboard * pBlackboard)
+{
+	//Todo Keep track  of inventory in blackboard
+	auto InvInfo = InventoryInfo();
+	pBlackboard->GetData("InventoryInfo", InvInfo);
+
+	return  (InvInfo.slots[0] == ItemTypes::FOOD
+		|| InvInfo.slots[1] == ItemTypes::FOOD
+		|| InvInfo.slots[2] == ItemTypes::FOOD
+		|| InvInfo.slots[3] == ItemTypes::FOOD
+		|| InvInfo.slots[4] == ItemTypes::FOOD);
+
+}
+inline bool HasGun(Elite::Blackboard * pBlackboard)
+{
+	//Todo Keep track  of inventory in blackboard
+	auto InvInfo = InventoryInfo();
+	pBlackboard->GetData("InventoryInfo", InvInfo);
+	
+	return  (InvInfo.slots[0] == ItemTypes::PISTOL
+		|| InvInfo.slots[1] == ItemTypes::PISTOL
+		|| InvInfo.slots[2] == ItemTypes::PISTOL
+		|| InvInfo.slots[3] == ItemTypes::PISTOL
+		|| InvInfo.slots[4] == ItemTypes::PISTOL);
+
+}
+inline bool SeeItem(Elite::Blackboard * pBlackboard)
+{
+	vector<EntityInfo> vEInfo; 
+
+	if (!pBlackboard->GetData("EntitiesInFOV", vEInfo)
+		) return false;
+
+	for (auto eInfo : vEInfo)
+	{
+		if (eInfo.Type == eEntityType::ITEM) return true; 
+
+	}
+	return false; 
+}
+inline bool DontSeeItemOrHaveClosestItem(Elite::Blackboard * pBlackboard)
+{
+	vector<EntityInfo> vEInfo;
+	bool isItemSet = false; 
+
+	if (!pBlackboard->GetData("EntitiesInFOV", vEInfo) 
+		|| !pBlackboard->GetData("ClosestItemSet", isItemSet)) return false;
+
+	if (isItemSet)
+		return false; 
+
+	for (auto eInfo : vEInfo)
+	{
+		if (eInfo.Type == eEntityType::ITEM) return false;
+
+	}
+
+	return true;
+
+}
+inline bool HasFreeSpace(Elite::Blackboard * pBlackboard)
+{
+	auto InvInfo = InventoryInfo();
+	pBlackboard->GetData("InventoryInfo", InvInfo);
+
+	return  (InvInfo.slots[0] == ItemTypes::EMPTY
+		|| InvInfo.slots[1] == ItemTypes::EMPTY
+		|| InvInfo.slots[2] == ItemTypes::EMPTY
+		|| InvInfo.slots[3] == ItemTypes::EMPTY
+		|| InvInfo.slots[4] == ItemTypes::EMPTY);
+}
+
+inline bool HasTrash(Elite::Blackboard * pBlackboard)
+{
+	auto InvInfo = InventoryInfo();
+	pBlackboard->GetData("InventoryInfo", InvInfo);
+
+	return  (InvInfo.slots[0] == ItemTypes::GARBAGE
+		|| InvInfo.slots[1] == ItemTypes::GARBAGE
+		|| InvInfo.slots[2] == ItemTypes::GARBAGE
+		|| InvInfo.slots[3] == ItemTypes::GARBAGE
+		|| InvInfo.slots[4] == ItemTypes::GARBAGE);
+	return true;
+}
+
+
+inline bool IsInventoryFull(Elite::Blackboard* pBlackboard)
+{
+	auto InvInfo = InventoryInfo();
+	pBlackboard->GetData("InventoryInfo", InvInfo);
+	return  (InvInfo.slots[0] != ItemTypes::EMPTY
+		&& InvInfo.slots[1] != ItemTypes::EMPTY
+		&&  InvInfo.slots[2] != ItemTypes::EMPTY
+		&&  InvInfo.slots[3] != ItemTypes::EMPTY
+		&&  InvInfo.slots[4] != ItemTypes::EMPTY);
+	return true;
+}
+inline bool IsEnergyNotFull(Elite::Blackboard* pBlackboard)
+{
+	AgentInfo Agent;
+	if (!pBlackboard->GetData("", Agent)) return false;
+	auto energy = Agent.Energy;
+	if (energy < 9.5)
+		return true;
+	else
+		return true;
+	return true;
+}
+inline bool IsHpNotFull(Elite::Blackboard* pBlackboard)
+{
+	AgentInfo Agent;
+	if (!pBlackboard->GetData("Agent", Agent)) return false;
+	auto hp = Agent.Health; 
+	if (hp < 9.5)
+		return true; 
+	else 
+	return true;
+}
+inline bool Empty(Elite::Blackboard* pBlackboard)
+{
+
+	return true;
+}
+
+inline Elite::BehaviorState UseMedKit(Elite::Blackboard * pBlackboard)
+{
+	auto InvInfo = InventoryInfo();
+	IExamInterface * Interface;
+
+	const bool dataAvailable =  pBlackboard->GetData("InventoryInfo", InvInfo)
+	&& pBlackboard->GetData("Interface", Interface);
+	if (!dataAvailable)
+		return Elite::Failure;
+	int medkitslot = -1;
+	if (InvInfo.slots[0] == ItemTypes::MEDKIT)
+		medkitslot = 0; 
+	if (InvInfo.slots[1] == ItemTypes::MEDKIT)
+		medkitslot = 1;
+	if (InvInfo.slots[2] == ItemTypes::MEDKIT)
+		medkitslot = 2;
+	if (InvInfo.slots[3] == ItemTypes::MEDKIT)
+		medkitslot = 3;
+	if (InvInfo.slots[4] == ItemTypes::MEDKIT)
+		medkitslot = 4;
+
+
+
+	if (medkitslot >= 0)
+	{
+		Interface->Inventory_UseItem(medkitslot);
+		Interface->Inventory_RemoveItem(medkitslot);
+		return Elite::Success;
+	}
+	std::cout << "Tried to use medkit without medkit" << std::endl; 
+	return Elite::Failure; 
+
+}
+
+
+inline Elite::BehaviorState UseFood(Elite::Blackboard * pBlackboard)
+{
+	auto InvInfo = InventoryInfo();
+	IExamInterface * Interface;
+
+	const bool dataAvailable = pBlackboard->GetData("InventoryInfo", InvInfo)
+		&& pBlackboard->GetData("Interface", Interface);
+	if (!dataAvailable)
+		return Elite::Failure;
+	int kitslot = -1;
+	if (InvInfo.slots[0] == ItemTypes::FOOD)
+		kitslot = 0;
+	if (InvInfo.slots[1] == ItemTypes::FOOD)
+		kitslot = 1;
+	if (InvInfo.slots[2] == ItemTypes::FOOD)
+		kitslot = 2;
+	if (InvInfo.slots[3] == ItemTypes::FOOD)
+		kitslot = 3;
+	if (InvInfo.slots[4] == ItemTypes::FOOD)
+		kitslot = 4;
+
+
+
+	if (kitslot >= 0)
+	{
+		Interface->Inventory_UseItem(kitslot);
+		Interface->Inventory_RemoveItem(kitslot);
+		return Elite::Success;
+	}
+	std::cout << "Tried to use food without food" << std::endl;
+	return Elite::Failure;
+	return Elite::Success;
+}
+//inline Elite::BehaviorState DropFood(Elite::Blackboard *)
+//{
+//	//printf("Opening da box \n"); 
+//	//return Success; 
+//	return Elite::Success;
+//}
+//inline Elite::BehaviorState MoveToItem(Elite::Blackboard *)
+//{
+//
+//	//printf("Opening da box \n"); 
+//	//return Success; 
+//	return Elite::Success;
+//}
+//
+//inline Elite::BehaviorState DropTrash(Elite::Blackboard *)
+//{
+//	//printf("Opening da box \n"); 
+//	//return Success; 
+//	return Elite::Success;
+//}
+
+inline Elite::BehaviorState PickUpItem(Elite::Blackboard * pBlackboard)
+{
+	//bool succes =  pBlackboard->ChangeData("TargetSet", false); 
+	//if (succes)
+	//{
+	//	printf("  taking item \n"); 
+	//	return Success; 
+	//}
+	//return Failure; 
+	EntityInfo Item;
+	bool isItemSet;
+	IExamInterface * pInterface; 
+	InventoryInfo inv; 
+	std::cout << "tryin"
+	const bool dataAvailable = pBlackboard->GetData("Interface", pInterface)
+		&& pBlackboard->GetData("ClosestItem", Item)
+		&& pBlackboard->GetData("ClosestItemSet", isItemSet)
+		&& pBlackboard->GetData("InventoryInfo", inv)
+		;
+	if (!dataAvailable)
+		return Elite::Failure;
+	if (!isItemSet)
+	{
+		std::cout << "Tried Picking up closest item without item set in BB" << std::endl;
+		return Elite::Failure;
+	}
+	pBlackboard->ChangeData("ClosestItemSet", false);
+	ItemInfo item; 
+
+	if (pInterface->Item_Grab(Item, item))
+	{
+		//Once grabbed, you can add it to a specific inventory slot
+		//Slot must be empty
+		int emptyslotindex = -1; 
+
+		if (inv.slots[0] == ItemTypes::EMPTY)
+			emptyslotindex = 0;
+		if (inv.slots[1] == ItemTypes::EMPTY)
+			emptyslotindex = 1; 
+		if (inv.slots[2] == ItemTypes::EMPTY)
+			emptyslotindex = 2; 
+		if (inv.slots[3] == ItemTypes::EMPTY)
+			emptyslotindex = 3;
+		if (inv.slots[4] == ItemTypes::EMPTY)
+			emptyslotindex = 4;
+		if  (emptyslotindex ==  -1)
+		{
+			std::cout << "tried adding item to full invetory" << std::endl; 
+			return Failure; 
+		}
+		pInterface->Inventory_AddItem(emptyslotindex, item);
+		inv.slots[emptyslotindex] = (ItemTypes)(int)item.Type; 
+		pBlackboard->ChangeData("ClosestItemSet", false);
+
+	}
+
+
+	return Elite::Success;
+
+}
+
+inline Elite::BehaviorState ChangeToIdle(Elite::Blackboard * pBlackboard)
+{
+	ISteeringBehavior * pIdle = nullptr;
+	ISteeringBehavior * pCurrentBehavior = nullptr;
+	AgentInfo pAgent;
+	const bool dataAvailable = pBlackboard->GetData("Agent", pAgent)
+		&& pBlackboard->GetData("IdleBehavior", pIdle)
+		&& pBlackboard->GetData("CurrentBehavior", pCurrentBehavior)
+		;
+
+	if (!dataAvailable)
+		return Elite::Failure;
+
+
+	if (pIdle != pCurrentBehavior)
+	{
+		printf("Switch to Idle behavior \n");
+		pBlackboard->ChangeData("CurrentBehavior", pIdle);
+	}
+	return Elite::Success;
+
+}
+inline Elite::BehaviorState ChangeToSeek(Elite::Blackboard * pBlackboard)
+{
+	ISteeringBehavior * pSeek = nullptr;
+	ISteeringBehavior * pCurrentBehavior = nullptr;
+	AgentInfo pAgent;
+	IExamInterface * pInterface {};
+	const bool dataAvailable = pBlackboard->GetData("Agent", pAgent)
+		&& pBlackboard->GetData("Interface", pInterface)
+		&& pBlackboard->GetData("SeekBehavior", pSeek)
+		&& pBlackboard->GetData("CurrentBehavior", pCurrentBehavior)
+		;
+
+	if (!dataAvailable)
+		return Elite::Failure;
+	/*if (!pAgent || !pSeek)
+		return Elite::Failure; */
+	auto checkpointLocation = pInterface->World_GetCheckpointLocation();
+
+	//Use the navmesh to calculate the next navmesh point
+	auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(checkpointLocation);
+
+	dynamic_cast<SeekBehavior *>(pSeek)->SetTarget(nextTargetPos);
+	if (pSeek != pCurrentBehavior)
+	{
+		printf("Switch to seek behavior \n");
+		
+	}
+	pBlackboard->ChangeData("CurrentBehavior", pSeek);
+	return Elite::Success;
+
+}
+inline Elite::BehaviorState SwitchToWaypointSeek(Elite::Blackboard * pBlackboard)
+{
+	ISteeringBehavior * pSeek = nullptr;
+	ISteeringBehavior * pCurrentBehavior = nullptr;
+	IExamInterface * pInterface;
+	const bool dataAvailable = pBlackboard->GetData("Interface", pInterface)
+		&& pBlackboard->GetData("SeekBehavior", pSeek)
+		&& pBlackboard->GetData("CurrentBehavior", pCurrentBehavior)
+		;
+
+	if (!dataAvailable)
+		return Elite::Failure;
+	/*if (!pAgent || !pSeek)
+		return Elite::Failure; */   
+		//Retrieve the current location of our CheckPoint
+	auto checkpointLocation = pInterface->World_GetCheckpointLocation();
+
+	//Use the navmesh to calculate the next navmesh point
+	auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(checkpointLocation);
+
+	dynamic_cast<SeekBehavior *>(pSeek)->SetTarget(nextTargetPos);
+	printf("Switch to Seek Item behavior \n");
+	pBlackboard->ChangeData("CurrentBehavior", pSeek);
+	return Elite::Success;
+
+}
+inline Elite::BehaviorState ChangeToSeekItem(Elite::Blackboard * pBlackboard)
+{
+	ISteeringBehavior * pSeek = nullptr;
+	ISteeringBehavior * pCurrentBehavior = nullptr;
+	Vector2 target; 
+	EntityInfo closestItem;
+	bool isItemSet; 
+
+	AgentInfo pAgent;
+	const bool dataAvailable =
+		pBlackboard->GetData("Agent", pAgent)
+		&& pBlackboard->GetData("SeekBehavior", pSeek)
+		&& pBlackboard->GetData("CurrentBehavior", pCurrentBehavior)
+		&& pBlackboard->GetData("ClosestItem", closestItem)
+		&& pBlackboard->GetData("ClosestItemSet", isItemSet)
+
+		;
+
+	if (!dataAvailable)
+		return Elite::Failure;
+	/*if (!pAgent || !pSeek)
+		return Elite::Failure; */
+	if (!isItemSet)
+	{
+		std::cout << "Tried going to closest item without item set in BB" << std::endl;
+		return Elite::Failure;
+	}
+
+	dynamic_cast<SeekBehavior *>(pSeek)->SetTarget(closestItem.Location); 
+	printf("Switch to Seek Item behavior \n");
+	pBlackboard->ChangeData("CurrentBehavior", pSeek);
+	
+	return Elite::Success;
+
+}
+
+
+inline  Elite::BehaviorState SaveClosestItemInFOV(Elite::Blackboard * pBlackboard)
+{
+
+	vector<EntityInfo> vEInfo;
+
+	
+	if (!pBlackboard->GetData("EntitiesInFOV", vEInfo)) 	return Elite::Failure;
+	AgentInfo Agent;
+	if (!pBlackboard->GetData("Agent", Agent)) 	return Elite::Failure;
+	auto loc = Agent.Position;
+	float maxdist = 999999;
+	EntityInfo Item; 
+
+	for (auto eInfo : vEInfo)
+	{
+		auto pos = eInfo.Location;
+		auto v = Agent.Position - eInfo.Location;
+		auto dist = sqrt(v.x * v.x + v.y * v.y);
+		if (dist < maxdist)
+		{
+			maxdist = dist; 
+			Item = eInfo;
+
+		}
+
+	}
+	if (maxdist <  99999)
+	{
+		if (pBlackboard->ChangeData("ClosestItem", Item) && pBlackboard->ChangeData("ClosestItemSet", true))
+		return Elite::Success;
+	}
+	return Elite::Failure;
+}
+
+
+inline bool IsClosestItemInRange(Elite::Blackboard * pBlackboard)
+{
+	EntityInfo Item;
+	bool ItemSet; 
+	AgentInfo Agent;
+	if (!pBlackboard->GetData("Agent", Agent)) 	return false;
+	if (!pBlackboard->GetData("ClosestItem", Item)) return false;
+	if (!pBlackboard->GetData("ClosestItemSet", ItemSet)) return false;
+
+	auto loc = Agent.Position;
+	if (!ItemSet)
+	{
+		std::cout << "Tried checking if closest item is in range  without item set in BB" << std::endl;
+		return Elite::Failure;
+	}
+
+	auto pos = Item.Location;
+	auto v = Agent.Position - pos;
+	auto dist = sqrt(v.x * v.x + v.y * v.y);
+	if (dist < Agent.GrabRange)
+	{
+		return true;
+	}
+	return false; 
+	
+}
+
+inline bool IsClosestItemNotInRange(Elite::Blackboard * pBlackboard)
+{
+	EntityInfo Item;
+	bool ItemSet;
+	AgentInfo Agent;
+	if (!pBlackboard->GetData("Agent", Agent)) 	return Elite::Failure;
+	if (!pBlackboard->GetData("ClosestItem", Item)) return false;
+	if (!pBlackboard->GetData("ClosestItemSet", ItemSet)) return false;
+
+	auto loc = Agent.Position;
+	if (!ItemSet)
+	{
+		std::cout << "Tried checking if closest item is in range  without item set in BB" << std::endl;
+		return Elite::Failure;
+	}
+
+	auto pos = Item.Location;
+	auto v = Agent.Position - pos;
+	auto dist = sqrt(v.x * v.x + v.y * v.y);
+	if (dist < Agent.GrabRange)
+	{
+		
+		return false;
+	}
+	return true;
+
+}
+
+/*
+inline bool IsInRangeOfItemInFOV(Elite::Blackboard * pBlackboard)
+{
+	vector<EntityInfo> vEInfo;
+
+	if (!pBlackboard->GetData("EntitiesInFOV", vEInfo)) return false;
+	AgentInfo Agent;
+	if (!pBlackboard->GetData("Agent", Agent)) return false;
+	auto loc = Agent.Position;
+
+	for (auto eInfo : vEInfo)
+	{
+		auto pos = eInfo.Location;
+		auto v = Agent.Position - eInfo.Location;
+		auto dist = sqrt(v.x * v.x + v.y * v.y);
+		if (dist < Agent.GrabRange)
+		{
+			return true;
+		}
+
+	}
+	return false;
+}
+
+inline bool IsNotInRangeOfItemInFOV(Elite::Blackboard * pBlackboard)
+{
+
+	vector<EntityInfo> vEInfo;
+
+	if (!pBlackboard->GetData("EntitiesInFOV", vEInfo)) return false;
+	AgentInfo Agent;
+	if (!pBlackboard->GetData("Agent", Agent)) return false;
+	auto loc = Agent.Position;
+
+	for (auto eInfo : vEInfo)
+	{
+		auto pos = eInfo.Location;
+		auto v = Agent.Position - eInfo.Location;
+		auto dist = sqrt(v.x * v.x + v.y * v.y);
+		if (dist < Agent.GrabRange)
+		{
+			return false;
+		}
+
+	}
+	return true;
+}
+
+*/
+#endif

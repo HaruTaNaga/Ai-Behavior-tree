@@ -1,0 +1,2 @@
+* MOD: Inventory_GetItem(...) contained a bug where it always returned the item in Slot 0. All slots work now. Calling this function on an empty slot still gives you an invalid call though (do your own management). 
+* MOD: temporarily disabled the InvalidCall event on the use of a weapon (would return false when gun is empty but also give you an invalid call penalty)
