@@ -7,15 +7,9 @@
 void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 {
 	//Retrieving the interface
-	//This interface gives you access to certain actions the AI_Framework can perform for you
+	//gives access to certain actions the AI_Framework can perform
 	m_pInterface = static_cast<IExamInterface*>(pInterface);
 	std::cout << "Welcome to the elite " << std::endl; 
-	//Bit information about the plugin
-	//Please fill this in!!
-	info.BotName = "MinionExam";
-	info.Student_FirstName = "Wout";
-	info.Student_LastName = "Gryseels";
-	info.Student_Class = "2DAE02";
 
 	m_pBlackBoard = new Elite::Blackboard;
 
